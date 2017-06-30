@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "library(readr)\nlibrary(ggplot2)\nlibrary(dplyr)\nlibrary(raster)\nlibrary(sp)\nlibrary(rgdal)\nlibrary(ggmap)\n\nhzip15 <- read_csv('./dash-austin-crime-report-2015/2014_Housing_Market_Analysis_Data_by_Zip_Code.csv')\ncrime15 <- read_csv('./dash-austin-crime-report-2015/Annual_Crime_Dataset_2015.csv')\ndat <- read_csv('./dash-austin-crime-report-2015/Crime_Housing_Joined.csv')\n\namap <- get_map(location = 'Austin, Texas')\n\n#Need to transform the coordinate reference system\n#See: https://gis.stackexchange.com/questions/45263/converting-geographic-coordinate-system-in-r\nd <- data.frame(lon = dat$X_Coordinate, lat = dat$Y_Coordinate)\nd %>%\n  filter(complete.cases(.)) -> d\n\ncoordinates(d) <- c(\"lon\", \"lat\")\nproj4string(d) <- CRS(\"+init=esri:102739\")\nCRS.new <- CRS(\"+init=epsg:4326\")\n\nd_trans <- spTransform(d, CRS.new)\n\ndat_coords <- data.frame(lon = d_trans@coords[,1], lat = d_trans@coords[,2])\n\nggmap(amap)+\n  geom_point(aes(lon, lat), data = dat_coords)\n",
+    "created" : 1498427984348.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "4002943955",
+    "id" : "109BB4B4",
+    "lastKnownWriteTime" : 1498788453,
+    "last_content_update" : 1498788453203,
+    "path" : "C:/Users/JustinandAbigail/Desktop/Fun_Projects/AustinCrime/Intro.R",
+    "project_path" : "Intro.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
