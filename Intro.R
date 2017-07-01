@@ -39,12 +39,16 @@ dat %>%
 
 
 dat %>%
-  rename(`Zip` = Zip_Code_Crime) %>%
-  group_by(Zip) %>%
+  group_by(Zip_Code_Crime) %>%
   summarise(Count = n()) %>%
-  ggplot(aes(x = reorder(Zip, Count), y = Count))+
+  ggplot(aes(x = reorder(Zip_Code_Crime, Count), y = Count))+
     geom_bar(stat = 'identity', width = 0.5)+
-    labs(xlab('Zip'))+
+    labs(x = 'Zip')+
     coord_flip()+
     theme_calc()
+
+
+ggplot(dat, aes(x = Highest_NIBRS_UCR_Offense_Description, fill = Zip_Code_Crime))+
+  geom_bar()+
+  labs(x = "Highest NIBS UCR", y = "Count", fill = "Zip")
 
