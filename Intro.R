@@ -11,17 +11,6 @@ crime15 <- read_csv('./dash-austin-crime-report-2015/Annual_Crime_Dataset_2015.c
 
 dat <- read_csv('./dash-austin-crime-report-2015/Crime_Housing_Joined.csv',
                 col_types = cols(Zip_Code_Crime = col_character()))
-
-dat %>%
-  mutate(Percentageofrentalunitsinpoorcondition = parse_number(Percentageofrentalunitsinpoorcondition),
-         `Percentageofhomeswithin1/4-mioftransitstop` = parse_number(`Percentageofhomeswithin1/4-mioftransitstop`),
-         `Percentchangeinnumberofhousingunits2000-2012` = parse_number(`Percentchangeinnumberofhousingunits2000-2012`),
-         `Percentageofhousingandtransportationcoststhatistransportation-related` = parse_number(`Percentageofhousingandtransportationcoststhatistransportation-related`),
-         Averagemonthlytransportationcost = parse_number(Averagemonthlytransportationcost),
-         `Changeinmedianhomevalue2000-2012` = parse_number(`Changeinmedianhomevalue2000-2012`),
-         `Changeinmedianrent2000-2012` = parse_number(`Changeinmedianrent2000-2012`),
-         `Changeinpercentageofpopulationbelowpoverty2000-2012` = parse_number(`Changeinpercentageofpopulationbelowpoverty2000-2012`))
-
 #Need to transform the coordinate reference system
 #See: https://gis.stackexchange.com/questions/45263/converting-geographic-coordinate-system-in-r
 
@@ -41,6 +30,22 @@ amap11 <- get_map(location = 'Austin, Texas', zoom = 11)
 
 ggmap(amap11)+
   geom_point(aes(lon, lat), data = dat_coords)
+
+dat %>%
+  filter(!(is.na(X_Coordinate) | is.na(Y_Coordinate))) %>%
+  mutate(X_Coordinate = df_coords_trans@coords[ ,1],
+         Y_Coordinate = df_coords_trans@coords[ ,2]) -> df
+
+ggmap(amap11)+
+  geom_point(aes(X_Coordinate, Y_Coordinate), data = df %>%
+             filter(Highest_Offense_Desc == "AUTO THEFT"))
+
+ggmap(amap11)+
+  geom_point(aes(X_Coordinate, Y_Coordinate), data = df %>%
+               filter(Highest_NIBRS_UCR_Offense_Description == 'Agg Assault'))
+
+
+
 
 dat %>%
   rename(`Zip` = Zip_Code_Crime) %>%
