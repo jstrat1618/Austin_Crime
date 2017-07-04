@@ -6,6 +6,8 @@ library(sp)
 library(ggmap)
 library(corrplot)
 
+hzip15 <- read_csv('./dash-austin-crime-report-2015/2014_Housing_Market_Analysis_Data_by_Zip_Code.csv')
+
 dat <- read_csv('./dash-austin-crime-report-2015/Crime_Housing_Joined.csv',
                 col_types = cols(Zip_Code_Crime = col_character(),
                                  Zip_Code_Housing = col_character()))
@@ -55,4 +57,14 @@ dat %>%
   select(-var_ix_2drop) %>%
   bind_cols(df_num) -> dat
 
-write_csv(dat, 'cleaned_data.csv')
+#write_csv(dat, 'cleaned_data.csv')
+
+#Clean 2015/2014_Housing_Market_Analysis_Data_by_Zip_Code.csv
+hzip15 <- read_csv('./dash-austin-crime-report-2015/2014_Housing_Market_Analysis_Data_by_Zip_Code.csv')
+
+hzip_mat <- apply(hzip15, 2, my_sub) #I'll let alone the fact that Zip_Code is being treated as numeric
+
+hzip_df <- tbl_df(hzip_mat)
+
+write_csv(hzip_df, 'cleaned_hzip.csv')
+
