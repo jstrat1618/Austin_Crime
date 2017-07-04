@@ -40,10 +40,21 @@ ggmap(amap11)+
   geom_point(aes(X_Coordinate, Y_Coordinate), data = df %>%
              filter(Highest_Offense_Desc == "AUTO THEFT"))
 
-ggmap(amap11)+
-  geom_point(aes(X_Coordinate, Y_Coordinate), data = df %>%
-               filter(Highest_NIBRS_UCR_Offense_Description == 'Agg Assault'))
 
+ggmap(amap10)+
+  geom_point(aes(X_Coordinate, Y_Coordinate, col = Highest_NIBRS_UCR_Offense_Description),
+             data = df)
+
+
+ggmap(amap11)+
+  geom_point(aes(X_Coordinate, Y_Coordinate, col = Highest_NIBRS_UCR_Offense_Description),
+             data = df)
+
+
+ggmap(amap11)+
+  geom_point(aes(X_Coordinate, Y_Coordinate, col = Highest_NIBRS_UCR_Offense_Description),
+             data = df %>%
+               filter(!Highest_NIBRS_UCR_Offense_Description %in% c("Theft", "Burglary")))
 
 
 
