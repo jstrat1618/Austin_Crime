@@ -1,4 +1,6 @@
+library(dplyr)
 library(readr)
+library(corrplot)
 
 hzip <- read_csv('cleaned_hzip.csv',
                  col_types = cols(`Zip Code` = col_character()))
@@ -33,9 +35,29 @@ all(dat_zip$Zip %in% hzip$`Zip Code`) #but not here
 dat_zip$Zip[!dat_zip$Zip %in% hzip$`Zip Code`]#These zips aren't found
 
 
-hzip %>%
-  rename(`Zip` = `Zip Code`) %>%
-  full_join(dat_zip, by = "Zip") -> hzip_joined
+not_fnd <- unique(dat$Zip_Code_Crime)[!unique(dat$Zip_Code_Crime) %in% unique(hzip$`Zip Code`)]
+cat('Need to find out why', not_fnd, 'is in dat but not hzip')
+
+
+#Moving on for now, let's throw out those data that are in not_fnd
+dat %>%
+  rename(`Zip Code` = Zip_Code_Crime) %>%
+  filter(`Zip Code` %in% hzip$`Zip Code`) %>%
+  group_by(`Zip Code`) %>%
+  summarise(Count = n()) %>%
+  full_join(hzip, by = "Zip Code") -> hzip_joined
+
+hzip_joined %>%
+  select(-`Zip Code`) %>%
+  as.matrix() -> hmat
+
+hmat_cor <- cor(hmat, use = 'pairwise.complete')
+sort(hmat_cor[,'Count'])
+
+#Corplot
+rownames(hmat_cor) <- NULL
+colnames(hmat_cor) <- NULL
+corrplot(hmat_cor)
 
 #Create housing zip code crime score
 ucr <- unique(dat$Highest_NIBRS_UCR_Offense_Description)
