@@ -1,6 +1,7 @@
 library(dplyr)
 library(readr)
 library(corrplot)
+library(ggplot2)
 
 hzip <- read_csv('cleaned_hzip.csv',
                  col_types = cols(`Zip Code` = col_character()))
@@ -45,24 +46,47 @@ dat %>%
   filter(`Zip Code` %in% hzip$`Zip Code`) %>%
   group_by(`Zip Code`) %>%
   summarise(Count = n()) %>%
-  full_join(hzip, by = "Zip Code") -> hzip_joined
+  full_join(hzip %>%
+            mutate(Pop = `Hispanic or Latino, of any race` + `Non-White, Non-Hispanic or Latino`),
+            by = "Zip Code") %>%
+  mutate(log_Crime_Pop = log(Count / Pop)) %>%
+  select(-Count)-> hzip_joined
 
 hzip_joined %>%
   select(-`Zip Code`) %>%
   as.matrix() -> hmat
 
 hmat_cor <- cor(hmat, use = 'pairwise.complete')
-sort(hmat_cor[,'Count'])
+sort(hmat_cor[,'log_Crime_Pop'])
 
 #Corplot
 rownames(hmat_cor) <- NULL
 colnames(hmat_cor) <- NULL
 corrplot(hmat_cor)
 
+
 #Create housing zip code crime score
+#Not sure if there is a "dplyr" way to do this?
 ucr <- unique(dat$Highest_NIBRS_UCR_Offense_Description)
 desired <- c(4, 3, 2, 5, 1, 6, 7)
 names(desired) <- ucr
 
-desired[match(dat$Highest_NIBRS_UCR_Offense_Description, ucr)]
+dat[,'Crime_Y1'] <- desired[match(dat$Highest_NIBRS_UCR_Offense_Description, ucr)]
 
+dat %>%
+  rename(`Zip Code` = Zip_Code_Crime) %>%
+  filter(`Zip Code` %in% hzip$`Zip Code`) %>%
+  group_by(`Zip Code`) %>%
+  summarise(Crime_Score1 = sum(Crime_Y1)) %>%
+  full_join(hzip %>%
+              mutate(Pop = `Hispanic or Latino, of any race` + `Non-White, Non-Hispanic or Latino`),
+            by = "Zip Code") %>%
+  mutate(log_Crime_Score1_Pop = log(Crime_Score1 / Pop)) %>%
+  select(-Crime_Score1)-> hzip_joined
+
+hzip_joined %>%
+  select(-`Zip Code`) %>%
+  as.matrix() -> hmat
+
+hmat_cor <- cor(hmat, use = 'pairwise.complete')
+sort(hmat_cor[,'log_Crime_Score1_Pop'])
