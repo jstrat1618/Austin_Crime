@@ -9,20 +9,6 @@ dat <- read_csv('cleaned_data.csv',
                 col_types = cols(Zip_Code_Crime = col_character(),
                                  Zip_Code_Housing = col_character()))
 
-#Make sure Zip_Code_Crime and Zip_Code_Housing are always the same
-all(dat$Zip_Code_Crime == dat$Zip_Code_Housing, na.rm = TRUE)
-
-#Aside from NA's looks like they are
-one <- is.na(dat$Zip_Code_Crime) & !is.na(dat$Zip_Code_Housing)
-two <- is.na(dat$Zip_Code_Housing) &! is.na(dat$Zip_Code_Crime)
-any(one)
-any(two)
-
-#Sometime Zip_Code_Crime is not missing while Zip_Code_Housing is 
-dat %>%
-  select(Zip_Code_Housing, Zip_Code_Crime, Highest_NIBRS_UCR_Offense_Description) %>%
-  filter(two)
-  
 
 #
 dat %>%
@@ -57,21 +43,30 @@ hzip_joined %>%
   as.matrix() -> hmat
 
 hmat_cor <- cor(hmat, use = 'pairwise.complete')
-sort(hmat_cor[,'log_Crime_Pop'])
+sort(hmat_cor[,'log_Crime_Pop'], decreasing = TRUE)
 
 #Corplot
 rownames(hmat_cor) <- NULL
 colnames(hmat_cor) <- NULL
 corrplot(hmat_cor)
 
+#The problem with the above is it is simply the number of crimes that appear and 
+#and doesn't distinguish between more violent crimes. Below, I will try to create a
+#function that computes a weighted measure of crime a vector of weighted cromes
 
 #Create housing zip code crime score
 #Not sure if there is a "dplyr" way to do this?
-ucr <- unique(dat$Highest_NIBRS_UCR_Offense_Description)
-desired <- c(4, 3, 2, 5, 1, 6, 7)
-names(desired) <- ucr
+weighted_crime <- function(w_rob = 4, w_burg = 3, w_auto =2, w_aglt = 5, w_theft = 1, 
+                           w_rape = 6, w_murd = 7){
+  
+  ucr <- unique(dat$Highest_NIBRS_UCR_Offense_Description)
+  desired <- c(4, 3, 2, 5, 1, 6, 7)
+  names(desired) <- ucr
+  out <- desired[match(dat$Highest_NIBRS_UCR_Offense_Description, ucr)]
+  return(out)
+}
 
-dat[,'Crime_Y1'] <- desired[match(dat$Highest_NIBRS_UCR_Offense_Description, ucr)]
+dat[,'Crime_Y1'] <- weighted_crime()
 
 dat %>%
   rename(`Zip Code` = Zip_Code_Crime) %>%
@@ -89,4 +84,6 @@ hzip_joined %>%
   as.matrix() -> hmat
 
 hmat_cor <- cor(hmat, use = 'pairwise.complete')
-sort(hmat_cor[,'log_Crime_Score1_Pop'])
+sort(hmat_cor[,'log_Crime_Score1_Pop'], decreasing = TRUE)
+
+#It would be interesting to use less "subjective weights like minimum sentences
