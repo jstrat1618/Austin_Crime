@@ -2,6 +2,7 @@ library(dplyr)
 library(readr)
 library(corrplot)
 library(ggplot2)
+library(ggthemes)
 
 hzip <- read_csv('cleaned_hzip.csv',
                  col_types = cols(`Zip Code` = col_character()))
@@ -74,3 +75,13 @@ hmat_cor <- cor(hmat, use = 'pairwise.complete')
 sort(hmat_cor[,'log_Crime_Score1_Pop'], decreasing = TRUE)
 
 #It would be interesting to use less "subjective weights like minimum sentences
+hzip_joined %>%
+  select(`Zip Code`, log_Crime_Score1_Pop) %>%
+  filter(!is.na(`Zip Code`)) %>%
+  mutate(Crime_Score1_Pop = exp(log_Crime_Score1_Pop)) %>%
+  arrange(Crime_Score1_Pop) %>%
+  ggplot(aes(`Zip Code`, Crime_Score1_Pop))+
+    geom_bar(width = 0.5, stat = 'identity')+
+    theme_calc()+
+    coord_flip()+
+    labs(x= "Zip Code", y = "Crime Score per Population")
