@@ -51,28 +51,15 @@ colnames(hmat_cor) <- NULL
 corrplot(hmat_cor)
 
 #The problem with the above is it is simply the number of crimes that appear and 
-#and doesn't distinguish between more violent crimes. Below, I will try to create a
-#function that computes a weighted measure of crime a vector of weighted cromes
-
-#Create housing zip code crime score
-#Not sure if there is a "dplyr" way to do this?
-weighted_crime <- function(w_rob = 4, w_burg = 3, w_auto =2, w_aglt = 5, w_theft = 1, 
-                           w_rape = 6, w_murd = 7){
-  
-  ucr <- unique(dat$Highest_NIBRS_UCR_Offense_Description)
-  desired <- c(4, 3, 2, 5, 1, 6, 7)
-  names(desired) <- ucr
-  out <- desired[match(dat$Highest_NIBRS_UCR_Offense_Description, ucr)]
-  return(out)
-}
-
-dat[,'Crime_Y1'] <- weighted_crime()
+#and doesn't distinguish between more violent crimes. The variable I have created
+#alled Crime_Score1 is my attempt create a weighted meausre albeit the weights
+#are somewhat arbitrary
 
 dat %>%
   rename(`Zip Code` = Zip_Code_Crime) %>%
   filter(`Zip Code` %in% hzip$`Zip Code`) %>%
   group_by(`Zip Code`) %>%
-  summarise(Crime_Score1 = sum(Crime_Y1)) %>%
+  summarise(Crime_Score1 = sum(Crime_Score1)) %>%
   full_join(hzip %>%
               mutate(Pop = `Hispanic or Latino, of any race` + `Non-White, Non-Hispanic or Latino`),
             by = "Zip Code") %>%
