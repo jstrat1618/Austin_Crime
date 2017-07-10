@@ -80,7 +80,7 @@ hzip_joined %>%
   filter(!is.na(`Zip Code`)) %>%
   mutate(Crime_Score1_Pop = exp(log_Crime_Score1_Pop)) %>%
   arrange(Crime_Score1_Pop) %>%
-  ggplot(aes(`Zip Code`, Crime_Score1_Pop))+
+  ggplot(aes(reorder(`Zip Code`, Crime_Score1_Pop), Crime_Score1_Pop))+
     geom_bar(width = 0.5, stat = 'identity')+
     theme_calc()+
     coord_flip()+
