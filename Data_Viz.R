@@ -21,7 +21,7 @@ df_no_missing %>%
     geom_point(aes(X_Coordinate, Y_Coordinate), alpha = 0.2, shape = 1)+
     geom_density2d()+
     labs(x = "Longitude", y = "Lattitude", title = 'All Crime in Austin, TX')+
-    theme_base()
+    theme_grey()
 
 amap10 <- get_map(location = 'Austin, Texas', zoom = 10)
 amap11 <- get_map(location = 'Austin, Texas', zoom = 11)
@@ -56,6 +56,7 @@ ggmap(amap11)+
   geom_density2d(aes(X_Coordinate, Y_Coordinate), data = df_no_missing)+
   facet_wrap(~Highest_NIBRS_UCR_Offense_Description)+
   labs(x = "Longitude", y = "Lattitude", title = 'Crime in Austin, TX')
+
 
 #By Clearance status
 df_no_missing %>%
@@ -136,3 +137,13 @@ dat %>%
   ggplot(aes(Clearance_Date, Count, col = Offense))+
     geom_line()
 
+#Let's visualize our index over time
+dat %>%
+  select(Clearance_Date, Crime_Score1) %>%
+  group_by(Clearance_Date) %>%
+  summarise(`Crime Index` = sum(Crime_Score1)) %>%
+  filter(!is.na(Clearance_Date)) %>%
+  ggplot(aes(Clearance_Date, `Crime Index`))+
+    geom_line()+
+    labs(x = 'Date', title = "Crime Index over time")
+  
