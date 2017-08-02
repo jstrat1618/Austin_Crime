@@ -57,20 +57,6 @@ dat %>%
   select(-var_ix_2drop) %>%
   bind_cols(df_num) -> dat
 
-#Create a function that weights crime
-#Create housing zip code crime score
-#Not sure if there is a "dplyr" way to do this?
-weighted_crime <- function(w_rob = 4, w_burg = 3, w_auto =2, w_aglt = 5, w_theft = 1, 
-                           w_rape = 6, w_murd = 7){
-  
-  ucr <- unique(dat$Highest_NIBRS_UCR_Offense_Description)
-  desired <- c(4, 3, 2, 5, 1, 6, 7)
-  names(desired) <- ucr
-  out <- desired[match(dat$Highest_NIBRS_UCR_Offense_Description, ucr)]
-  return(out)
-}
-
-dat[,'Crime_Score1'] <- weighted_crime()
 
 #write_csv(dat, 'cleaned_data.csv')
 
@@ -81,5 +67,5 @@ hzip_mat <- apply(hzip15, 2, my_sub) #I'll let alone the fact that Zip_Code is b
 
 hzip_df <- tbl_df(hzip_mat)
 
-write_csv(hzip_df, 'cleaned_hzip.csv')
+#write_csv(hzip_df, 'cleaned_hzip.csv')
 

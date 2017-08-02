@@ -146,4 +146,15 @@ dat %>%
   ggplot(aes(Clearance_Date, `Crime Index`))+
     geom_line()+
     labs(x = 'Date', title = "Crime Index over time")
-  
+
+#Saturday and Sundays have much lower crime
+dat %>%
+  select(Clearance_Date, Crime_Score1) %>%
+  group_by(Clearance_Date) %>%
+  summarise(`Crime Index` = sum(Crime_Score1)) %>%
+  filter(!is.na(Clearance_Date)) %>%
+  ungroup()%>%
+  mutate(weekday = wday(Clearance_Date, label = TRUE)) %>%
+  group_by(weekday) %>%
+  summarise(Mean_Index = mean(`Crime Index`))
+
