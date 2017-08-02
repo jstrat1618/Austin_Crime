@@ -7,10 +7,10 @@ library(ggmap)
 
 hzip <- read_csv('cleaned_hzip.csv',
                  col_types = cols(`Zip Code` = col_character()))
-dat <- read_csv('cleaned_data.csv',
+dat <- read_csv('scored_crime.csv',
                 col_types = cols(Zip_Code_Crime = col_character(),
                                  Zip_Code_Housing = col_character(),
-                                 Clearance_Date = col_date(format = "%d-%b-%y")))
+                                 Clearance_Date = col_date()))
 
 dat %>%
   filter(!(is.na(X_Coordinate) | is.na(Y_Coordinate))) -> df_no_missing
