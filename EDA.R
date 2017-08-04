@@ -111,3 +111,8 @@ cor_sorted <- function(x){
 
 #Example
 cor_sorted("Averagemonthlytransportationcost")
+
+#V&V of scored_crime.csv
+
+
+#
