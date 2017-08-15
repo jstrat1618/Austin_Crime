@@ -1,6 +1,7 @@
 library(readr)
 library(dplyr)
 library(ggplot2)
+library(geosphere)
 
 dat <- read_csv('cleaned_data.csv',
                 col_types = cols(Zip_Code_Crime = col_character(),
@@ -36,3 +37,30 @@ plt1 +
   geom_point(aes(cntrs[3,1], cntrs[3,2], col = 'red'))+
   geom_point(aes(cntrs[4,1], cntrs[4,2], col = 'red'))
   
+clust1 <- c(cntrs[1,1], cntrs[1,2])
+clust2 <- c(cntrs[2,1], cntrs[2,2])
+clust3 <- c(cntrs[3,1], cntrs[3,2])
+clust4 <- c(cntrs[4,1], cntrs[4,2])
+
+dist_clust1_miles <- numeric(nrow(coord_df))
+dist_clust2_miles <- numeric(nrow(coord_df))
+dist_clust3_miles <- numeric(nrow(coord_df))
+dist_clust4_miles <- numeric(nrow(coord_df))
+
+meters2miles <- 1/(1000*1.60934)
+
+for(i in 1:nrow(coord_df)){
+  x <- coord_df$X_Coordinate[i]
+  y <- coord_df$Y_Coordinate[i]
+  
+  dist_clust1_miles[i] <- distHaversine(c(x,y), clust1) * meters2miles
+  dist_clust2_miles[i] <- distHaversine(c(x,y), clust2) * meters2miles
+  dist_clust3_miles[i] <- distHaversine(c(x,y), clust3) * meters2miles
+  dist_clust4_miles[i] <- distHaversine(c(x,y), clust4) * meters2miles
+  
+}
+
+
+dist_df <- data.frame(dist_clust1_miles, dist_clust2_miles,
+                      dist_clust3_miles, dist_clust4_miles)
+
