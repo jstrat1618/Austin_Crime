@@ -61,6 +61,18 @@ for(i in 1:nrow(coord_df)){
 }
 
 
-dist_df <- data.frame(dist_clust1_miles, dist_clust2_miles,
-                      dist_clust3_miles, dist_clust4_miles)
+dist_df <- tbl_df(data.frame(dist_clust1_miles, dist_clust2_miles,
+                      dist_clust3_miles, dist_clust4_miles))
+
+
+num_miles <- 3.5
+
+dist_df %>%
+  filter(dist_clust1_miles < num_miles 
+         | dist_clust2_miles < num_miles
+         | dist_clust3_miles < num_miles
+         | dist_clust4_miles < num_miles) %>%
+  nrow()/nrow(dist_df)
+
+  
 
