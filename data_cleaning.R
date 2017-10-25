@@ -61,8 +61,6 @@ dat %>%
 #write_csv(dat, 'cleaned_data.csv')
 
 #Clean 2015/2014_Housing_Market_Analysis_Data_by_Zip_Code.csv
-hzip15 <- read_csv('./dash-austin-crime-report-2015/2014_Housing_Market_Analysis_Data_by_Zip_Code.csv')
-
 hzip_mat <- apply(hzip15, 2, my_sub) #I'll let alone the fact that Zip_Code is being treated as numeric
 
 hzip_df <- tbl_df(hzip_mat)
