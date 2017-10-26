@@ -1,0 +1,372 @@
+---
+title: "Austin Crime"
+author: "Justin Strate"
+date: "October 24, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Outline
+
+* Load Packages
+* Reading in the data
+* Data Cleaning
+- Crime Data set
+-  Housing Data Set
+* Data Visualization
+- Over the City of Austin
+- Over Time
+* Analyzing Crime by Zip Code
+- Identifying the zip codes with the most crime
+- Identifying which variables correlate with the number of crimes
+- Plotting a correlation plot using \code{corrplot}
+* Crime Clusters
+- Identifying the number of clusters
+- Identifying how many miles around each cluster explain at least 80\% of crime in Austin, Texas
+* Limitations
+
+
+# Load Packages
+```{r include=FALSE, cache=FALSE}
+library(readr)
+library(ggplot2)
+library(ggthemes)
+library(dplyr)
+library(sp)
+library(ggmap)
+library(corrplot)
+library(lubridate)
+library(geosphere)
+```
+
+
+## Read in the data
+```{r}
+hzip15 <- read_csv('./dash-austin-crime-report-2015/2014_Housing_Market_Analysis_Data_by_Zip_Code.csv',
+            col_types = cols(`Zip Code` = col_character()))
+
+dat <- read_csv('./dash-austin-crime-report-2015/Crime_Housing_Joined.csv',
+                col_types = cols(Zip_Code_Crime = col_character(),
+                                 Zip_Code_Housing = col_character(),
+                                 Clearance_Date = col_date(format = '%d-%b-%y')))
+```
+
+## Data Description
+We shall refer to Crime_Housing_Joined.csv as the crime data set, and the 2014_Housing_Market_Analysis_Data_by_Zip_Code.csv as the housing data set. The crime data set contains data regarding specfic crimes that occured. For example, if the the type of crime, the zip code where the crime occurred and the lattitude and longitude of where the crime occurred. The variables generally have long names that roughly describe the variable. Details around some crimes are ommitted for some crimes due to the nature of those crime. For example, the coordinates are not provided for rapes. The housing data set provides housing and demographic information about  thirty six zip codes within Austin, Texas. The names of the variables in both data sets are given with the code below. Using functions such as \code{str} or \code{glimpse} created too much output for the report.
+
+```{r}
+cat("Dimension of crime data set is", dim(dat), '\n')
+print("Crime Data set Variables")
+print(names(dat))
+cat("Dimension of housing data set is", dim(hzip15), '\n')
+print("Housing Data set Variables")
+print(names(hzip15))
+
+```
+
+
+## Data Cleaning
+There are are two problems with the data sets. First, we have to map the coordinates provided in the crime data set to the coordinate reference system provided by the ggmap package. We'll do that in the following code. Secondly, much of the data is numeric but in formats that caused the data to read in as character. This could have been avoided by reading the in the data with \code{col_number} parser in the readr package. However, since since there dozens of such variables in both data sets, I chose to write my own function to clean the data, then apply the function columnwise using the \code{apply} function.
+
+
+### Transforming the Coordinate System
+The following code uses the sp and rgdal packages to transform the coordinate reference system.
+```{r}
+data.frame(lon = dat$X_Coordinate, lat = dat$Y_Coordinate) %>%
+  filter(complete.cases(.)) -> df_coords
+
+coordinates(df_coords) <- c("lon", "lat")
+proj4string(df_coords) <- CRS("+init=esri:102739")
+CRS.new <- CRS("+init=epsg:4326")
+
+df_coords_trans <- spTransform(df_coords, CRS.new)
+
+dat %>%
+  filter(!(is.na(X_Coordinate) | is.na(Y_Coordinate))) %>%
+  mutate(X_Coordinate = df_coords_trans@coords[ ,1],
+         Y_Coordinate = df_coords_trans@coords[ ,2]) %>%
+  select(Key, X_Coordinate, Y_Coordinate) -> dat_coords
+
+dat %>% 
+  select(-X_Coordinate, -Y_Coordinate) %>%
+  full_join(dat_coords, by = "Key") -> dat
+
+```
+
+
+
+### Convert data that is supposed to be numeric
+The following code converts data to numeric by removing the symbols "%"", "$"", and ",".
+
+```{r}
+dat %>%
+  select(-Key, -Council_District, -Highest_Offense_Desc, 
+         -Highest_NIBRS_UCR_Offense_Description, -Report_Date, -Location,
+         -Clearance_Status, -Clearance_Date, -District, -Zip_Code_Crime,
+         -X_Coordinate, -Y_Coordinate, -Zip_Code_Housing) -> dat_num
+
+my_sub <- function(x){
+  x <- gsub("%", "", x)
+  x <- gsub("\\$" ,"", x)
+  x <- gsub(",", "", x)
+  x <- as.numeric(x)
+}
+
+dat_mat <- apply(dat_num, 2, my_sub)
+df_num <- tbl_df(dat_mat)
+
+var_ix_2drop <- which(names(dat) %in% colnames(dat_mat))
+
+dat %>%
+  select(-var_ix_2drop) %>%
+  bind_cols(df_num) -> dat
+
+```
+
+Here, we apply the same method to the housing data set.
+
+```{r}
+hzip_mat <- apply(hzip15, 2, my_sub) 
+hzip15 <- tbl_df(hzip_mat)
+hzip15 %>%
+  mutate(`Zip Code` = as.character(`Zip Code`))
+```
+
+## Data Visualization
+### Visualize Crime in Austin, Tx
+Now, let's visualize the coordinates where each crime was commited for the crimes where the coordinates are provided. 
+```{r}
+dat %>%
+  filter(!(is.na(X_Coordinate) | is.na(Y_Coordinate))) -> df_no_missing
+
+
+df_no_missing %>%
+  ggplot(aes(X_Coordinate, Y_Coordinate))+
+    geom_point(aes(X_Coordinate, Y_Coordinate), alpha = 0.2, shape = 1)+
+    geom_density2d()+
+    labs(x = "Longitude", y = "Lattitude", title = 'All Crime in Austin, TX')+
+    theme_grey() -> plt1
+
+plt1
+```
+
+We can use the ggmap package to pull a map of Austin, Texas and overlay these points.
+```{r}
+amap11 <- get_map(location = 'Austin, Texas', zoom = 11)
+```
+
+Now, we can overlay the points in the previous plot with an actual map of Austin, Texas.
+```{r}
+ggmap(amap11)+
+  geom_point(aes(X_Coordinate, Y_Coordinate), data = df_no_missing,
+             alpha = 0.2, shape = 1)+
+  geom_density2d(aes(X_Coordinate, Y_Coordinate), data = df_no_missing)+
+  labs(x = "Longitude", y = "Lattitude", title = 'All Crime in Austin, TX')
+```
+As shown in the warning message about 891 observations were ommited because of the zoom. I did try to overlay this with a zoom that would include all the observations, but this was not very insightful.
+
+We can visualize the different types of crimes using the \code{facet_wrap} function with the variable Highest_NIBRS_UCR_Offense_Description.
+```{r}
+ggmap(amap11)+
+  geom_point(aes(X_Coordinate, Y_Coordinate), data = df_no_missing,
+             alpha = 0.2, shape = 1)+
+  geom_density2d(aes(X_Coordinate, Y_Coordinate), data = df_no_missing)+
+  facet_wrap(~Highest_NIBRS_UCR_Offense_Description)+
+  labs(x = "Longitude", y = "Lattitude", title = 'Crime in Austin, TX')
+
+```
+
+
+## Visualize Crime Over Time
+```{r}
+dat %>%
+  select(Clearance_Date) %>%
+  filter(complete.cases(.))%>%
+  group_by(Clearance_Date) %>%
+  summarise(Count = n()) %>%
+  arrange(Clearance_Date) %>%
+  ggplot(aes(Clearance_Date, Count))+
+    geom_line()+
+    labs(x='Clearance Date', y='Number of Crimes', title='Number of Crimes over Time')+
+    theme_grey()
+
+```
+
+
+There seems to be a large downward trend after January 2016. Also, there seems be be very a cyclical pattern, perhaps this is due to the weekday?
+
+```{r}
+dat %>%
+  select(Clearance_Date) %>%
+  filter(complete.cases(.))%>%
+  mutate(Weekday = lubridate::wday(Clearance_Date, label = TRUE)) %>%
+  group_by(Weekday) %>%
+  summarise(Count = n()) %>%
+  ggplot(aes(Weekday, Count))+
+    geom_bar(stat = 'identity', width = 0.5)+
+    labs(y='Number of Crimes', title = 'Number of Crimes by Weekday')+
+    theme_grey()
+
+```
+
+There is considerably less crime on the weekend. Perhaps this may be due to data collection or perhaps crime occurrs during the weekdays for strategic purposes.
+```{r}
+dat %>%
+  select(Clearance_Date) %>%
+  filter(complete.cases(.) & Clearance_Date < as.Date('010116', format='%m%d%y'))%>%
+  mutate(Month = lubridate::month(Clearance_Date, label = TRUE)) %>%
+  group_by(Month) %>%
+  summarise(Count = n()) %>%
+  ggplot(aes(Month, Count))+
+    labs(y='Number of Crime by Month', title = 'Number of Crimes by Month')+
+    geom_bar(stat = 'identity', width = 0.5)+
+    theme_grey()
+
+```
+
+
+# Analyzing Crime by Zip Code
+First, there is a diparity between the zip codes in the data sets. All the zip codes in the crime data set (Crime_Housing_Joined.csv) are found in the zip code data set (2014_Housing_Market_Analysis_Data_by_Zip_Code.csv). However, not all the the zip codes found in the zip code data set are found the crime data set. This is shown in the following code. 
+
+```{r}
+d_zips <- unique(dat$Zip_Code_Crime)
+h_zips <- unique(hzip15$`Zip Code`)
+all(h_zips %in% d_zips) #All match here but
+all(d_zips %in% h_zips) #but not here
+not_fnd <- d_zips[which(!d_zips %in% h_zips)]
+cat('The Zip codes', not_fnd, 'are not found in the housing data set')
+```
+
+
+
+```{r}
+dat %>%
+  rename(`Zip Code` = Zip_Code_Crime) %>%
+  filter(`Zip Code` %in% hzip15$`Zip Code`) %>%
+  group_by(`Zip Code`) %>%
+  summarise(num_crimes = n()) %>%
+  ungroup() %>%
+  full_join(hzip15 %>%
+              mutate(`Zip Code` = as.character(`Zip Code`d)), by = "Zip Code") %>% 
+  filter(!is.na(`Zip Code`)) -> hdat
+```
+
+
+
+```{r}
+hdat %>%
+  ggplot(aes(reorder(`Zip Code`, num_crimes), num_crimes))+
+    geom_bar(stat = 'identity', width = 0.5)+
+    theme_grey()+
+    coord_flip()+
+    labs(y='Zip Code', x='Number of Crimes', title = 'Number of Crimes by Zip Code')
+```
+
+
+
+```{r}
+hdat %>%
+  select(-`Zip Code`) %>%
+  as.matrix() -> hmat
+
+hmat_cor <- cor(hmat, use = 'pairwise.complete')
+sort(hmat_cor[,'num_crimes'], decreasing = TRUE)
+```
+
+
+Let's draw a correlation plot of the data to get an idea about some of the interactions in the data.
+
+```{r}
+#Corplot
+rownames(hmat_cor) <- NULL
+colnames(hmat_cor) <- NULL
+corrplot(hmat_cor)
+```
+
+
+The correlation plots shows many possible interactions between the data. This adds further caution against interpreting the raw correlations directly.
+
+
+# Clusters of Crime
+I'ld like to know where most crimes occur in Austin, Texas. To do this, I will try to identify clusters of crime by using the kmeans algorithim on the coordinates. First, we have to create a data frame that only contains the coordinates.
+```{r}
+df_no_missing %>%
+  select(X_Coordinate, Y_Coordinate) -> coord_df
+```
+
+Next, we'll try to identify the appropriate number of clusters by plotting the within sum of squares versus the number of clusters. 
+
+```{r}
+Nk <- 10
+w <- numeric(Nk)
+b <- numeric(Nk)
+for (num_cent in 2:Nk){
+  fit <- kmeans(coord_df, num_cent)
+  w[num_cent] <- fit$tot.withinss
+}
+
+w <- w[-1]
+qplot(2:Nk,w, xlab = 'Number of Clusters', ylab = "Within SS")
+
+```
+From this plot it appears 4 clusters will suffice.
+
+```{r}
+kmeans_fit <- kmeans(coord_df, centers = 4)
+cntrs <- kmeans_fit$centers
+
+plt1 +
+  geom_point(aes(cntrs[1,1], cntrs[1,2], col = 'red'))+
+  geom_point(aes(cntrs[2,1], cntrs[2,2], col = 'red'))+
+  geom_point(aes(cntrs[3,1], cntrs[3,2], col = 'red'))+
+  geom_point(aes(cntrs[4,1], cntrs[4,2], col = 'red'))+
+  scale_colour_discrete(name  ="Cluster", labels = NULL)
+
+```
+
+As the following code shows about 81\% of crime is commited within about a 3.5 mile radius of one of these centers. 
+
+```{r}
+clust1 <- c(cntrs[1,1], cntrs[1,2])
+clust2 <- c(cntrs[2,1], cntrs[2,2])
+clust3 <- c(cntrs[3,1], cntrs[3,2])
+clust4 <- c(cntrs[4,1], cntrs[4,2])
+
+
+dist_clust1_miles <- numeric(nrow(coord_df))
+dist_clust2_miles <- numeric(nrow(coord_df))
+dist_clust3_miles <- numeric(nrow(coord_df))
+dist_clust4_miles <- numeric(nrow(coord_df))
+
+meters2miles <- 1/(1000*1.60934)
+
+for(i in 1:nrow(coord_df)){
+  x <- coord_df$X_Coordinate[i]
+  y <- coord_df$Y_Coordinate[i]
+  
+  dist_clust1_miles[i] <- distHaversine(c(x,y), clust1) * meters2miles
+  dist_clust2_miles[i] <- distHaversine(c(x,y), clust2) * meters2miles
+  dist_clust3_miles[i] <- distHaversine(c(x,y), clust3) * meters2miles
+  dist_clust4_miles[i] <- distHaversine(c(x,y), clust4) * meters2miles
+  
+}
+
+
+dist_df <- tbl_df(data.frame(dist_clust1_miles, dist_clust2_miles,
+                      dist_clust3_miles, dist_clust4_miles))
+
+
+num_miles <- 3.5
+
+dist_df %>%
+  filter(dist_clust1_miles < num_miles 
+         | dist_clust2_miles < num_miles
+         | dist_clust3_miles < num_miles
+         | dist_clust4_miles < num_miles) %>%
+  nrow()/nrow(dist_df)
+
+```
+
