@@ -1,3 +1,9 @@
 # Crime in Austin, Texas.
 
-I got this data from https://data.world/dash/austin-crime-report-2015. I wanted explore the crime in Austin and practice my hadling of geospatial data.
+I got this data from https://data.world/dash/austin-crime-report-2015. I wanted explore the crime in Austin and practice my hadling of geospatial data. The original data is found in the dash-austin-crime-report-2015 folder.   
+
+The key findings are discussed in Austin_Crime.Rmd. In Austin_Crime.Rmd I discuss the various data cleaning methods, data visualizations, identify the zip codes with the most crime and discuss some clusters of crime found in Austin. In that file, I also wrote the files cleaned_crime.csv and cleaned_housing.csv that reflects the cleaned data after the steps discussed in Austin_Crime.Rmd. Thus, one can read in the cleaned data easily rather than repeating the steps. I also discussed the limitations of the data in Austin_Crime.Rmd. Two major limitations are the fact that there isn't a variable that describes the population in each zip code. Secondly, that the crime is not weighted by severity.
+
+If you want to analyze this data by weighting crime according to severity, I would suggest looking at the script Weight_Crime.R. This script contains a function that weights crime according to severity. The files scored_crime.csv and Scored_relative_to_proportion.csv contain the cleaned data, but a variable that scores the crime according to severity. The file scored_crime.csv simply weighted crime arbitrarily according to the 7 levels provided, where the most severe crime recieves a score of 7, and the least severe a score of 1. Here, severity is subjectively determined relative to the other crimes. In Scored_relative_to_proportion.csv crime is weighted according to the frequency at which it occurs so that each crime contributes equally to the score. Since more severe crimes should occur less often they should recieve more weight. However, this score only allows for each crime to contribute equally to the score. In other words, one seventh of the score is due to murder, one seventh is due to theft and so forth.
+
+
