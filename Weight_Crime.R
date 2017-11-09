@@ -1,10 +1,10 @@
 library(readr)
-score_dat_crime <- function(input_file = 'cleaned_data.csv', out_file = 'scored_crime.csv',
+score_dat_crime <- function(input_file = 'cleaned_crime_data.csv', out_file = 'scored_crime.csv',
                             w_rob = 4, w_burg = 3, w_auto =2, w_aglt = 5, w_theft = 1, 
                             w_rape = 6, w_murd = 7){
   
 
-  dat <- read_csv('cleaned_data.csv',
+  dat <- read_csv(input_file,
                  col_types = cols(Zip_Code_Crime = col_character(),
                                   Zip_Code_Housing = col_character(),
                                   Clearance_Date = col_date(format = "%d-%b-%y")))
@@ -41,7 +41,7 @@ sdat <- read_csv('scored_crime.csv',
 unique(sdat$Highest_NIBRS_UCR_Offense_Description)
 unique(dat$Highest_NIBRS_UCR_Offense_Description)
 
-#Perhaps we can score crime so that each crime reads
+#Perhaps we can score crime so that each crime contributes equally to the score
 tbl <- table(sdat$Highest_NIBRS_UCR_Offense_Description)
 
 wts <- sum(tbl)/tbl
