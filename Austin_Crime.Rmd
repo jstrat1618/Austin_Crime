@@ -384,5 +384,11 @@ dist_df %>%
   nrow()/nrow(dist_df)
 
 ```
-Assuming these cluster's do not overlap (I've not checked that), this corresponds to about 154 square miles (\code{ 4*pi*3.5^2}). According to the Austin's wikipedia page, Austin is about 272 square miles. These 154 square miles make up about 57\% of Austin's total area and are responsible for about 81\% of the crime.
+Assuming these cluster's do not overlap (I've not checked that), this corresponds to about 154 square miles (\code{ 4*pi*3.5^2}). According to the Austin's wikipedia page, Austin is about 272 square miles. These 154 square miles make up about 57\% of Austin's total area and are responsible for about 81\% of the crime.    
+
+
+# Limitations    
+The clearest limitation to this is that there is no data regarding the population in each zip code. This makes it difficult to even describe how certain variables relate to crime because they could simply correlate with population.   
+
+Secondly, in the analysis we have done here we have not weighted the crime. In other words, we only looked at the number of crimes, not how violent they are. One could try to analyze crime by creating a an index that penalizes crime by severity, yet this is somewhat subjective. You can see the script Weight_Crime.R for an idea of how to do this. The files scored_crime.csv and Scored_relative_to_proportion.csv are the outputs of that file. Both score crime according to severity.
 
