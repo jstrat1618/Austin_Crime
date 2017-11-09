@@ -1,7 +1,7 @@
 ---
 title: "Austin Crime"
 author: "Justin Strate"
-date: "October 24, 2017"
+date: "November 9, 2017"
 output: html_document
 ---
 
@@ -58,13 +58,8 @@ dat <- read_csv('./dash-austin-crime-report-2015/Crime_Housing_Joined.csv',
 We shall refer to Crime_Housing_Joined.csv as the crime data set, and the 2014_Housing_Market_Analysis_Data_by_Zip_Code.csv as the housing data set. The crime data set contains data regarding specfic crimes that occured. For example, if the the type of crime, the zip code where the crime occurred and the lattitude and longitude of where the crime occurred. The variables generally have long names that roughly describe the variable. Details around some crimes are ommitted for some crimes due to the nature of those crime. For example, the coordinates are not provided for rapes. The housing data set provides housing and demographic information about  thirty six zip codes within Austin, Texas. The names of the variables in both data sets are given with the code below. Using functions such as \code{str} or \code{glimpse} created too much output for the report.
 
 ```{r}
-cat("Dimension of crime data set is", dim(dat), '\n')
-print("Crime Data set Variables")
-print(names(dat))
-cat("Dimension of housing data set is", dim(hzip15), '\n')
-print("Housing Data set Variables")
-print(names(hzip15))
-
+cat("Dimension of crime data set is ", dim(dat)[1], ' by ', dim(dat)[2], '. \n', sep = '')
+cat("Dimension of housing data set is ",dim(hzip15)[1], ' by ', dim(hzip15)[2], '. \n', sep='')
 ```
 
 
@@ -73,7 +68,7 @@ There are are two problems with the data sets. First, we have to map the coordin
 
 
 ### Transforming the Coordinate System
-The following code uses the sp and rgdal packages to transform the coordinate reference system.
+The following code uses the sp and rgdal packages to transform the coordinate reference system so that the data can be plotted with the map from the city of Austin from ggmap package.
 ```{r}
 data.frame(lon = dat$X_Coordinate, lat = dat$Y_Coordinate) %>%
   filter(complete.cases(.)) -> df_coords
@@ -102,18 +97,21 @@ dat %>%
 The following code converts data to numeric by removing the symbols "%"", "$"", and ",".
 
 ```{r}
-dat %>%
-  select(-Key, -Council_District, -Highest_Offense_Desc, 
-         -Highest_NIBRS_UCR_Offense_Description, -Report_Date, -Location,
-         -Clearance_Status, -Clearance_Date, -District, -Zip_Code_Crime,
-         -X_Coordinate, -Y_Coordinate, -Zip_Code_Housing) -> dat_num
-
 my_sub <- function(x){
   x <- gsub("%", "", x)
   x <- gsub("\\$" ,"", x)
   x <- gsub(",", "", x)
   x <- as.numeric(x)
 }
+
+
+dat %>%
+  select(-Key, -Council_District, -Highest_Offense_Desc, 
+         -Highest_NIBRS_UCR_Offense_Description, -Report_Date, -Location,
+         -Clearance_Status, -Clearance_Date, -District, -Zip_Code_Crime,
+         -X_Coordinate, -Y_Coordinate, -Zip_Code_Housing) -> dat_num
+
+
 
 dat_mat <- apply(dat_num, 2, my_sub)
 df_num <- tbl_df(dat_mat)
@@ -135,6 +133,12 @@ hzip15 %>%
   mutate(`Zip Code` = as.character(`Zip Code`))
 ```
 
+Now, we will write both files to a csv file, so that in the future we can read the cleaned data in directly rather than repeating this process.
+
+```{r}
+write_csv(dat, 'cleaned_crime_data.csv')
+write_csv(hzip15, 'cleaned_housing_data.csv')
+```
 ## Data Visualization
 ### Visualize Crime in Austin, Tx
 Now, let's visualize the coordinates where each crime was commited for the crimes where the coordinates are provided. 
@@ -156,9 +160,19 @@ plt1
 We can use the ggmap package to pull a map of Austin, Texas and overlay these points.
 ```{r}
 amap11 <- get_map(location = 'Austin, Texas', zoom = 11)
+amap10 <- get_map(location = 'Austin, Texas', zoom = 10)
 ```
 
 Now, we can overlay the points in the previous plot with an actual map of Austin, Texas.
+```{r}
+ggmap(amap10)+
+  geom_point(aes(X_Coordinate, Y_Coordinate), data = df_no_missing,
+             alpha = 0.2, shape = 1)+
+  geom_density2d(aes(X_Coordinate, Y_Coordinate), data = df_no_missing)+
+  labs(x = "Longitude", y = "Lattitude", title = 'All Crime in Austin, TX')
+```
+The zoom of 10 is the zoom clossest zoom that includes all the points. However, the points are very clustered. The next closest zoom omits 896 observations or a little over 2% of the data points, but adds more detail to the points and how they are spread throughout Austin.
+
 ```{r}
 ggmap(amap11)+
   geom_point(aes(X_Coordinate, Y_Coordinate), data = df_no_missing,
@@ -166,7 +180,6 @@ ggmap(amap11)+
   geom_density2d(aes(X_Coordinate, Y_Coordinate), data = df_no_missing)+
   labs(x = "Longitude", y = "Lattitude", title = 'All Crime in Austin, TX')
 ```
-As shown in the warning message about 891 observations were ommited because of the zoom. I did try to overlay this with a zoom that would include all the observations, but this was not very insightful.
 
 We can visualize the different types of crimes using the \code{facet_wrap} function with the variable Highest_NIBRS_UCR_Offense_Description.
 ```{r}
@@ -196,7 +209,7 @@ dat %>%
 ```
 
 
-There seems to be a large downward trend after January 2016. Also, there seems be be very a cyclical pattern, perhaps this is due to the weekday?
+There seems to be a large downward trend after January 2016. Since, the variable here is called "Clearance_Date", this may be due to when the crime is processed rather than when it occurs. Also, there seems be be very a cyclical pattern, perhaps this is due to the weekday?
 
 ```{r}
 dat %>%
@@ -212,7 +225,7 @@ dat %>%
 
 ```
 
-There is considerably less crime on the weekend. Perhaps this may be due to data collection or perhaps crime occurrs during the weekdays for strategic purposes.
+There is considerably less crime on the weekend. This may be consistent with when the crime is processed rather than when it occurs. Let's look at crimes by month. Keep in mind there is an extra January, Febuary and part of March in the data because the data extends January 2015 to March 2016. However, January 2015 to March 2016 there is a downward trend.
 ```{r}
 dat %>%
   select(Clearance_Date) %>%
@@ -240,7 +253,7 @@ not_fnd <- d_zips[which(!d_zips %in% h_zips)]
 cat('The Zip codes', not_fnd, 'are not found in the housing data set')
 ```
 
-
+Here, we will join the two data sets so we can compare crime by zip code.
 
 ```{r}
 dat %>%
@@ -250,11 +263,11 @@ dat %>%
   summarise(num_crimes = n()) %>%
   ungroup() %>%
   full_join(hzip15 %>%
-              mutate(`Zip Code` = as.character(`Zip Code`d)), by = "Zip Code") %>% 
+              mutate(`Zip Code` = as.character(`Zip Code`)), by = "Zip Code") %>% 
   filter(!is.na(`Zip Code`)) -> hdat
 ```
 
-
+Now, we can plot the number of crimes in each zip code by a barplot. I'll put the zip codes on the y-axis and crime on the x-axis, and I'll order the zip codes so that the zip codes in order of the number of crimes.
 
 ```{r}
 hdat %>%
@@ -264,7 +277,9 @@ hdat %>%
     coord_flip()+
     labs(y='Zip Code', x='Number of Crimes', title = 'Number of Crimes by Zip Code')
 ```
+As we can see the zip code 78753 has the most crime. Unforunately, we don't have the population for each zip code, so we can't really conclude that 78753 is the most dangerous. It could be that crime per person is relatively constant across all the zip codes, but 78753 has the most people.    
 
+Let's look some correlations. I'll compute a correlation matrix using the \code{cor} function. The option \code{use = 'pairwise.complete'} means that correlation for any two variables is computed whenever both those variables have correspondingly non-missing data points. I would caution against emphasizing raw correlations. As I mentioned before, crime per person may be constant accross zip codes, and therefore crime will appear to be more apparent in zip codes with more people and correlate with variables that correlate with population like traffic. There could also be other confounding variables.
 
 
 ```{r}
@@ -291,14 +306,13 @@ The correlation plots shows many possible interactions between the data. This ad
 
 
 # Clusters of Crime
-I'ld like to know where most crimes occur in Austin, Texas. To do this, I will try to identify clusters of crime by using the kmeans algorithim on the coordinates. First, we have to create a data frame that only contains the coordinates.
+I'ld like to know where most crimes occur in Austin, Texas. To do this, I will try to identify clusters of crime by using the k-means algorithim on the coordinates. First, we have to create a data frame that only contains the coordinates.
 ```{r}
 df_no_missing %>%
   select(X_Coordinate, Y_Coordinate) -> coord_df
 ```
 
 Next, we'll try to identify the appropriate number of clusters by plotting the within sum of squares versus the number of clusters. 
-
 ```{r}
 Nk <- 10
 w <- numeric(Nk)
@@ -312,7 +326,8 @@ w <- w[-1]
 qplot(2:Nk,w, xlab = 'Number of Clusters', ylab = "Within SS")
 
 ```
-From this plot it appears 4 clusters will suffice.
+
+What I'm looking for in this plot is a distinict "elbow", where the change in the "Within SS" on the y-axis does not seem to improve significatly by adding more clusters. The best choice from this plot appears to be 4. Now, we'll plot the crime in Austin, with these four clusters shown in red.
 
 ```{r}
 kmeans_fit <- kmeans(coord_df, centers = 4)
@@ -369,4 +384,5 @@ dist_df %>%
   nrow()/nrow(dist_df)
 
 ```
+Assuming these cluster's do not overlap (I've not checked that), this corresponds to about 154 square miles (\code{ 4*pi*3.5^2}). According to the Austin's wikipedia page, Austin is about 272 square miles. These 154 square miles make up about 57\% of Austin's total area and are responsible for about 81\% of the crime.
 
