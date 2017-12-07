@@ -2,12 +2,17 @@
 title: "Austin Crime"
 author: "Justin Strate"
 date: "November 9, 2017"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+# Overview
+Here I've analyzed crime from the city of Austin, Texas from January 2015 to March 2016. I got the data from https://data.world/dash/austin-crime-report-2015. In this analysis I show how crime is spread throughout the city, how the crimes are processed over time, identify the zip codes with the most crime, discuss the variables that correlate with crime, identify four clusters of crime, and discuss the limitations of this analysis. The main limitation of this analysis is that I don't have the population of each zip code. Consequently, any correlation between crime and a particular variable may be merely the result of the population within the zip code. For example, the zip code with the most crime may merely be the zip code with the highest population. 
 
 # Outline
 
@@ -30,7 +35,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 # Load Packages
-```{r include=FALSE, cache=FALSE}
+```{r results='hide', message=FALSE, warning=FALSE}
 library(readr)
 library(ggplot2)
 library(ggthemes)
@@ -55,7 +60,7 @@ dat <- read_csv('./dash-austin-crime-report-2015/Crime_Housing_Joined.csv',
 ```
 
 ## Data Description
-We shall refer to Crime_Housing_Joined.csv as the crime data set, and the 2014_Housing_Market_Analysis_Data_by_Zip_Code.csv as the housing data set. The crime data set contains data regarding specfic crimes that occured. For example, if the the type of crime, the zip code where the crime occurred and the lattitude and longitude of where the crime occurred. The variables generally have long names that roughly describe the variable. Details around some crimes are ommitted for some crimes due to the nature of those crime. For example, the coordinates are not provided for rapes. The housing data set provides housing and demographic information about  thirty six zip codes within Austin, Texas. The names of the variables in both data sets are given with the code below. Using functions such as \code{str} or \code{glimpse} created too much output for the report.
+We shall refer to Crime_Housing_Joined.csv as the crime data set, and the 2014_Housing_Market_Analysis_Data_by_Zip_Code.csv as the housing data set. The crime data set contains data regarding specfic crimes that occured. For example, the the type of crime, the zip code where the crime occurred, and the lattitude and longitude of where the crime occurred. The variables generally have long names that roughly describe the variable. Details around some crimes are ommitted for some crimes due to the nature of those crime. For example, the coordinates are not provided for rapes. The housing data set provides housing and demographic information about  thirty six zip codes within Austin, Texas. The names of the variables in both data sets are given with the code below. Using functions such as \code{str} or \code{glimpse} created too much output for the report.
 
 ```{r}
 cat("Dimension of crime data set is ", dim(dat)[1], ' by ', dim(dat)[2], '. \n', sep = '')
@@ -277,6 +282,7 @@ hdat %>%
     coord_flip()+
     labs(y='Zip Code', x='Number of Crimes', title = 'Number of Crimes by Zip Code')
 ```
+    
 As we can see the zip code 78753 has the most crime. Unforunately, we don't have the population for each zip code, so we can't really conclude that 78753 is the most dangerous. It could be that crime per person is relatively constant across all the zip codes, but 78753 has the most people.    
 
 Let's look some correlations. I'll compute a correlation matrix using the \code{cor} function. The option \code{use = 'pairwise.complete'} means that correlation for any two variables is computed whenever both those variables have correspondingly non-missing data points. I would caution against emphasizing raw correlations. As I mentioned before, crime per person may be constant accross zip codes, and therefore crime will appear to be more apparent in zip codes with more people and correlate with variables that correlate with population like traffic. There could also be other confounding variables.
@@ -289,7 +295,7 @@ hdat %>%
 
 hmat_cor <- cor(hmat, use = 'pairwise.complete')
 sort(hmat_cor[,'num_crimes'], decreasing = TRUE)
-```
+``` 
 
 
 Let's draw a correlation plot of the data to get an idea about some of the interactions in the data.
