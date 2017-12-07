@@ -1,7 +1,7 @@
 ---
 title: "Austin Crime"
 author: "Justin Strate"
-date: "November 9, 2017"
+date: "December 6, 2017"
 output:
   html_document: default
   pdf_document: default
@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Overview
-Here I've analyzed crime from the city of Austin, Texas from January 2015 to March 2016. I got the data from https://data.world/dash/austin-crime-report-2015. In this analysis I show how crime is spread throughout the city, how the crimes are processed over time, identify the zip codes with the most crime, discuss the variables that correlate with crime, identify four clusters of crime, and discuss the limitations of this analysis. The main limitation of this analysis is that I don't have the population of each zip code. Consequently, any correlation between crime and a particular variable may be merely the result of the population within the zip code. For example, the zip code with the most crime may merely be the zip code with the highest population. 
+Here I've analyzed crime from the city of Austin, Texas from January 2015 to March 2016. I got the data from https://data.world/dash/austin-crime-report-2015. In this analysis I show how crime is spread throughout the city, how the crimes are processed over time, identify the zip codes with the most crime, discuss the variables that correlate with the number of crimes observed in the available zip codes, identify four clusters of crime, and discuss the limitations of this analysis. The main limitation of this analysis is that I don't have the population of each zip code. Consequently, any correlation between crime and a particular variable may be merely the result of the population within the zip code.
 
 # Outline
 
@@ -60,7 +60,7 @@ dat <- read_csv('./dash-austin-crime-report-2015/Crime_Housing_Joined.csv',
 ```
 
 ## Data Description
-We shall refer to Crime_Housing_Joined.csv as the crime data set, and the 2014_Housing_Market_Analysis_Data_by_Zip_Code.csv as the housing data set. The crime data set contains data regarding specfic crimes that occured. For example, the the type of crime, the zip code where the crime occurred, and the lattitude and longitude of where the crime occurred. The variables generally have long names that roughly describe the variable. Details around some crimes are ommitted for some crimes due to the nature of those crime. For example, the coordinates are not provided for rapes. The housing data set provides housing and demographic information about  thirty six zip codes within Austin, Texas. The names of the variables in both data sets are given with the code below. Using functions such as \code{str} or \code{glimpse} created too much output for the report.
+We shall refer to Crime_Housing_Joined.csv as the crime data set, and the 2014_Housing_Market_Analysis_Data_by_Zip_Code.csv as the housing data set. The crime data set contains data regarding specfic crimes that occured. For example, the the type of crime, the zip code where the crime occurred, and the lattitude and longitude of where the crime occurred. The variables generally have long names that roughly describe the variable. Details around some crimes are ommitted for some crimes due to the nature of those crime. For example, the coordinates are not provided for rapes. The housing data set provides housing and demographic information about  thirty six zip codes within Austin, Texas. The names of the variables in both data sets are given with the code below. Using functions such as \code{str} or \code{glimpse} created too much output.
 
 ```{r}
 cat("Dimension of crime data set is ", dim(dat)[1], ' by ', dim(dat)[2], '. \n', sep = '')
@@ -144,6 +144,7 @@ Now, we will write both files to a csv file, so that in the future we can read t
 write_csv(dat, 'cleaned_crime_data.csv')
 write_csv(hzip15, 'cleaned_housing_data.csv')
 ```
+
 ## Data Visualization
 ### Visualize Crime in Austin, Tx
 Now, let's visualize the coordinates where each crime was commited for the crimes where the coordinates are provided. 
@@ -176,7 +177,8 @@ ggmap(amap10)+
   geom_density2d(aes(X_Coordinate, Y_Coordinate), data = df_no_missing)+
   labs(x = "Longitude", y = "Lattitude", title = 'All Crime in Austin, TX')
 ```
-The zoom of 10 is the zoom clossest zoom that includes all the points. However, the points are very clustered. The next closest zoom omits 896 observations or a little over 2% of the data points, but adds more detail to the points and how they are spread throughout Austin.
+   
+The zoom of 10 is the zoom clossest zoom that includes all the points. However, the points are very clustered. The next closest zoom omits 896 observations or a little over 2% of the data points, but adds more detail.
 
 ```{r}
 ggmap(amap11)+
@@ -186,7 +188,8 @@ ggmap(amap11)+
   labs(x = "Longitude", y = "Lattitude", title = 'All Crime in Austin, TX')
 ```
 
-We can visualize the different types of crimes using the \code{facet_wrap} function with the variable Highest_NIBRS_UCR_Offense_Description.
+We can visualize the different types of crimes using the \code{facet_wrap} function with the variable Highest_NIBRS_UCR_Offense_Description.    
+
 ```{r}
 ggmap(amap11)+
   geom_point(aes(X_Coordinate, Y_Coordinate), data = df_no_missing,
@@ -214,7 +217,7 @@ dat %>%
 ```
 
 
-There seems to be a large downward trend after January 2016. Since, the variable here is called "Clearance_Date", this may be due to when the crime is processed rather than when it occurs. Also, there seems be be very a cyclical pattern, perhaps this is due to the weekday?
+There seems to be a large downward trend after January 2016. Since, the variable here is called "Clearance_Date", this may be due to when the crime is processed rather than when it occurs. Also, there is a very cyclical pattern. As I will show with the follow code, this pattern is probably the result of less crime being processed on weekends.
 
 ```{r}
 dat %>%
@@ -230,7 +233,7 @@ dat %>%
 
 ```
 
-There is considerably less crime on the weekend. This may be consistent with when the crime is processed rather than when it occurs. Let's look at crimes by month. Keep in mind there is an extra January, Febuary and part of March in the data because the data extends January 2015 to March 2016. However, January 2015 to March 2016 there is a downward trend.
+There is considerably less crime on Saturday and Sunday.Let's look at crimes by month. Keep in mind there is an extra January, Febuary and part of March in the data because the data extends January 2015 to March 2016. However, January 2015 to March 2016 there is a downward trend.    
 ```{r}
 dat %>%
   select(Clearance_Date) %>%
@@ -247,7 +250,7 @@ dat %>%
 
 
 # Analyzing Crime by Zip Code
-First, there is a diparity between the zip codes in the data sets. All the zip codes in the crime data set (Crime_Housing_Joined.csv) are found in the zip code data set (2014_Housing_Market_Analysis_Data_by_Zip_Code.csv). However, not all the the zip codes found in the zip code data set are found the crime data set. This is shown in the following code. 
+First, there is a diparity between the zip codes in the data sets. All the zip codes in the crime data set (Crime_Housing_Joined.csv) are found in the zip code data set (2014_Housing_Market_Analysis_Data_by_Zip_Code.csv). However, not all the the zip codes found in the zip code data set are found the crime data set. This is shown in the following code.    
 
 ```{r}
 d_zips <- unique(dat$Zip_Code_Crime)
@@ -280,12 +283,12 @@ hdat %>%
     geom_bar(stat = 'identity', width = 0.5)+
     theme_grey()+
     coord_flip()+
-    labs(y='Zip Code', x='Number of Crimes', title = 'Number of Crimes by Zip Code')
+    labs(x='Zip Code', y='Number of Crimes', title = 'Number of Crimes by Zip Code')
 ```
     
 As we can see the zip code 78753 has the most crime. Unforunately, we don't have the population for each zip code, so we can't really conclude that 78753 is the most dangerous. It could be that crime per person is relatively constant across all the zip codes, but 78753 has the most people.    
 
-Let's look some correlations. I'll compute a correlation matrix using the \code{cor} function. The option \code{use = 'pairwise.complete'} means that correlation for any two variables is computed whenever both those variables have correspondingly non-missing data points. I would caution against emphasizing raw correlations. As I mentioned before, crime per person may be constant accross zip codes, and therefore crime will appear to be more apparent in zip codes with more people and correlate with variables that correlate with population like traffic. There could also be other confounding variables.
+Let's look some correlations. I'll compute a correlation matrix using the \code{cor} function. The option \code{use = 'pairwise.complete'} means that correlation for any two variables is computed whenever both those variables have correspondingly non-missing data points. I would caution against emphasizing raw correlations. As I mentioned before, crime per person may be constant accross zip codes, and therefore crime will appear to be more apparent in zip codes with more people and correlate with variables that correlate with population like traffic. There could also be other confounding factors.   
 
 
 ```{r}
@@ -396,5 +399,5 @@ Assuming these cluster's do not overlap (I've not checked that), this correspond
 # Limitations    
 The clearest limitation to this is that there is no data regarding the population in each zip code. This makes it difficult to even describe how certain variables relate to crime because they could simply correlate with population.   
 
-Secondly, in the analysis we have done here we have not weighted the crime. In other words, we only looked at the number of crimes, not how violent they are. One could try to analyze crime by creating a an index that penalizes crime by severity, yet this is somewhat subjective. You can see the script Weight_Crime.R for an idea of how to do this. The files scored_crime.csv and Scored_relative_to_proportion.csv are the outputs of that file. Both score crime according to severity.
+Secondly, in the analysis we have done here we have not weighted the crime. In other words, we only looked at the number of crimes in each zip code, and not accounting for the nature of the crime. One could try to analyze crime by creating an index that penalizes crime by severity, yet this is somewhat subjective. You can see the script Weight_Crime.R found at https://github.com/jstrat1618/Austin_Crime for an idea of how to do this. The files scored_crime.csv and Scored_relative_to_proportion.csv are the outputs of that file. Both score crime according to severity.
 
